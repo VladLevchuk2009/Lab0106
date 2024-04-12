@@ -1,0 +1,259 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+
+class Program
+{
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+
+        CollectionType<ResurcesDepartament> collection1 = new CollectionType<ResurcesDepartament>(new ResurcesDepartament[]
+        {
+            new ResurcesDepartament("Черватюк", "М.І.", "2005", "517,50"),
+            new ResurcesDepartament("Петреноко", "П.С.", "1954", "219,10"),
+            new ResurcesDepartament("Смотриковський", "М.С.", "1987", "300,00")
+        });
+
+        CollectionType<ResurcesDepartament> collection2 = new CollectionType<ResurcesDepartament>(new ResurcesDepartament[]
+        {
+            new ResurcesDepartament("Шулепко", "Р.І.", "1995", "515,90"),
+            new ResurcesDepartament("Петреноко", "Л.П.", "1999", "519,10"),
+            new ResurcesDepartament("Білоус", "М.К.", "1987", "350,00")
+        });
+
+        CollectionType<ResurcesDepartament> collection3 = new CollectionType<ResurcesDepartament>(new ResurcesDepartament[]
+        {
+            new ResurcesDepartament("Іванов\t", "І.І.", "1975", "545,80"),
+            new ResurcesDepartament("Левчук", "П.П.", "1986", "200,70"),
+            new ResurcesDepartament("Макаренко", "М.С.", "1996", "400,00")
+        });
+
+        var query1 = collection1
+            .Where(item => item.Surname.StartsWith("П"))
+            .OrderByDescending(item => item.Surname)
+            .Take(2);
+
+        var query2 = collection1.Concat(collection2).Concat(collection3)
+            .Select(item => item.Date)
+            .Distinct()
+            .Count();
+
+        var query3 = collection1.Concat(collection2).Concat(collection3)
+             .Where(item => int.Parse(item.Date) > 1980)
+             .Select(item => double.Parse(item.Salary))
+             .Average();
+
+        var query4 = collection1.Concat(collection2).Concat(collection3)
+            .Select(item => item.Surname.ToUpper())
+            .OrderBy(item => item)
+            .Aggregate(0, (acc, name) => acc + name.Length);
+
+
+        var query5 = collection1.Concat(collection2).Concat(collection3)
+            .GroupBy(item => item.Date)
+            .Select(group => new
+            {
+                YearOfBirth = group.Key,
+                MaxSalary = group.Max(item => double.Parse(item.Salary)),
+                Employees = group.OrderBy(item => item.Surname)
+            });
+
+        foreach (var person in query1)
+        {
+            Console.WriteLine(person);
+        }
+        Console.WriteLine();
+        Console.WriteLine($"Кількість унікальних років народження: {query2}");
+        Console.WriteLine();
+        Console.WriteLine($"Середня зарплата працівників, народжених після 1980 року: {query3}");
+        Console.WriteLine();
+        Console.WriteLine($"Загальна кількість символів у всіх іменах: {query4}");
+        Console.WriteLine();
+        foreach (var group in query5)
+        {
+            Console.WriteLine($"Рік народження: {group.YearOfBirth}, Максимальна зарплата: {group.MaxSalary}");
+            foreach (var employee in group.Employees)
+            {
+                Console.WriteLine($"    {employee}");
+            }
+        }
+        Console.WriteLine();
+
+        List<CollectionType<ResurcesDepartament>> collections = new List<CollectionType<ResurcesDepartament>>
+        {
+            collection1, collection2, collection3            
+        };
+
+        foreach (var col in collections)
+        {
+            Console.WriteLine($"Колекція {collections.IndexOf(col) + 1}:");
+            col.Display();
+            Console.WriteLine();
+        }
+
+        string searchValue = "Петреноко";
+        Console.WriteLine($"Рядки, що містять значення '{searchValue}':");
+        foreach (var col in collections)
+        {
+            col.Search(searchValue);
+        }
+        Console.WriteLine();
+
+        int n = 9, count = 0;
+        Console.WriteLine($"Кількість елементів з фамілією = {n}:");
+        foreach (var col in collections)
+        {
+            foreach (var item in col)
+                if(item.Surname.Length == n) count++;
+        }
+        Console.WriteLine(count);
+        Console.WriteLine();
+
+        Console.WriteLine("Сортування у зростаючому порядку:");
+        foreach (var col in collections)
+        {
+            col.Sort();
+            col.Display();
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("Сортування у спадаючому порядку:");
+        foreach (var col in collections)
+        {
+            col.Sort();
+            col.Reverse();
+            col.Display();
+            Console.WriteLine();
+        }
+    }
+}
+public class ResurcesDepartament : IComparable<ResurcesDepartament>
+{
+    private string surname;
+    private string initials;
+    private string date;
+    private string salary;
+
+    public ResurcesDepartament(string surname, string initials, string date, string salary)
+    {
+        this.surname = surname;
+        this.initials = initials;
+        this.date = date;
+        this.salary = salary;
+    }
+    public string Surname
+    {
+        get { return surname; }
+        set { surname = value; }
+    }
+    public string Initials
+    {
+        get { return initials; }
+        set { initials = value; }
+    }
+    public string Date
+    {
+        get { return date; }
+        set { date = value; }
+    }
+    public string Salary
+    {
+        get { return salary; }
+        set { salary = value; }
+    }
+    public int CompareTo(ResurcesDepartament other)
+    {
+        return this.surname.CompareTo(other.surname);
+    }
+    public override string ToString()
+    {
+        return $"{surname}, {initials}, {date}, {salary}";
+    }
+}
+public class CollectionType<T> : IEnumerable<T> where T : ResurcesDepartament, IComparable<T>
+{
+    private List<T> items;
+    public CollectionType()
+    {
+        items = new List<T>();
+    }
+    public CollectionType(IEnumerable<T> initialItems)
+    {
+        items = new List<T>(initialItems);
+    }
+    public void Insert(int index, T item)
+    {
+        items.Insert(index, item);
+    }
+    public void Add(T item)
+    {
+        items.Add(item);
+    }
+    public bool Remove(T item)
+    {
+        return items.Remove(item);
+    }
+    public void RemoveAt(int index)
+    {
+        items[index] = default;
+    }
+    public bool Contains(T item)
+    {
+        return items.Contains(item);
+    }
+    public int IndexOf(T item)
+    {
+        return items.IndexOf(item);
+    }
+    public void Clear()
+    {
+        items.Clear();
+    }
+    public void Display()
+    {
+        foreach (var item in items)
+        {
+            Console.WriteLine(item);
+        }
+    }
+    public void Sort()
+    {
+        items.Sort();
+    }
+    public void Reverse()
+    {
+        items.Reverse();
+    }
+    public void Search(string value)
+    {
+        foreach (var item in items)
+        {
+            if (item.ToString().Contains(value))
+            {
+                Console.WriteLine(item.ToString());
+            }
+        }
+    }
+    public int Count
+    {
+        get { return items.Count; }
+    }
+    public T this[int index]
+    {
+        get { return items[index]; }
+        set { items[index] = value; }
+    }
+    public IEnumerator<T> GetEnumerator()
+    {
+        return items.GetEnumerator();
+    }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+}
