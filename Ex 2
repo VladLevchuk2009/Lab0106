@@ -1,0 +1,67 @@
+using System.Text;
+class Program
+{
+    static void Main(string[] args)
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+
+        LinkedList<int> list1 = new LinkedList<int>();
+        list1.AddLast(1);
+        list1.AddLast(2);
+        list1.AddLast(3);
+
+        LinkedList<int> list2 = new LinkedList<int>();
+        list2.AddLast(4);
+        list2.AddLast(5);
+
+        LinkedList<int> list3 = new LinkedList<int>();
+        list3.AddLast(6);
+        list3.AddLast(7);
+        list3.AddLast(8);
+        list3.AddLast(9);
+
+        CollectionType<int>[] collections = new CollectionType<int>[3];
+        collections[0] = new CollectionType<int>(list1);
+        collections[1] = new CollectionType<int>(list2);
+        collections[2] = new CollectionType<int>(list3);
+
+
+        int value = 5;
+        int count = 0;
+        for(int i = 0; i < collections.Length; i++)
+            count += collections[i].CountCollectionsWithValue(value);
+        Console.WriteLine("Кількість колекцій з елемнтом " + value + ": " + count);
+
+        LinkedList<int> minCollection = collections[0].GetMinCollection(collections);
+        LinkedList<int> maxCollection = collections[0].GetMaxCollection(collections);
+
+        Console.WriteLine("Мінімальна колекція: " + string.Join(", ", minCollection));
+        Console.WriteLine("Максимальна колекція: " + string.Join(", ", maxCollection));
+    }
+}
+
+class CollectionType<T>
+{
+    private LinkedList<T> collection;
+
+    public CollectionType(LinkedList<T> collection)
+    {
+        this.collection = collection;
+    }
+
+    public int CountCollectionsWithValue(T value)
+    {
+        return collection.Count(x => x.Equals(value));
+    }
+
+    public LinkedList<T> GetMinCollection(CollectionType<T>[] collections)
+    {
+        return collections.OrderBy(col => col.collection.Count).First().collection;
+    }
+
+    public LinkedList<T> GetMaxCollection(CollectionType<T>[] collections)
+    {
+        return collections.OrderByDescending(col => col.collection.Count).First().collection;
+    }
+}
+
